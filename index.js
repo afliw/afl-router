@@ -3,7 +3,7 @@ var fs = require('fs');
 
 var Router = {
     defaultFile: "index.html",
-    baseDir: path.join(__dirname, "app", "dist"),
+    baseDir: "/",
     routes: {
         GET: {},
         POST: {}
