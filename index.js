@@ -136,8 +136,7 @@ function parseFormData(data){
 }
 
 function returnStaticContent(request, response) {
-    var fullPath = path.join(Router.baseDir, request.url);
-    fullPath = fullPath.split('\\').length == 2 ? fullPath.replace("\\", "") : fullPath;
+    var fullPath = path.join(".", Router.baseDir, request.url);
     fs.exists(fullPath, (exists) => {
         if (exists) {
             fs.readFile(fullPath, (err, data) => {
