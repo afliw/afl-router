@@ -27,9 +27,10 @@ aflRouter.get("/data", function(req, res){
 });
 
 aflRouter.post("/update", function(req, res){
-    // Methods parameters sent from the webpage
-    // can be accessed in request.input.METHOD
-    console.log(req.input.post);
+    // Parameters sent from the webpage
+    // can be accessed in request.input.body or request.input.url, 
+    // depending on the parameter origin.
+    console.log(req.input.body);
 });
 
 // Put server to listen on port 8080
