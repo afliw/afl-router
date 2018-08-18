@@ -36,7 +36,7 @@ function getUrlQueryParams(request) {
     var urlParts = request.url.split("?");
     request.url = urlParts[0];
     if(!request.input) request.input = {};
-    request.input.get = parseURLEncodedParameters(urlParts[1]);
+    request.input.url = parseURLEncodedParameters(urlParts[1]);
 }
 
 function parseURLEncodedParameters(params) {
@@ -102,7 +102,11 @@ function parseBody(request){
             params = parseURLEncodedParameters(request.body);
             break;
         case "application/json":
-            params = JSON.parse(request.body);
+            try {
+                params = JSON.parse(request.body);
+            } catch (error) {
+                params = error;
+            }         
             break;
         case "multipart/form-data":
             params = parseFormData(request.body);
@@ -112,7 +116,7 @@ function parseBody(request){
     }
     if(!params) return;
     if(!request.input) request.input = {};
-    request.input.post = params;
+    request.input.body = params;
 }
 
 function parseFormData(data){
