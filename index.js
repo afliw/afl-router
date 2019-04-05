@@ -8,13 +8,25 @@ var Router = {
     fallbackResource: undefined,
     routes: {
         GET: {},
-        POST: {}
+        POST: {},
+        PUT: {},
+        PATCH: {},
+        DELETE: {}
     },
     get: function(url, callback){
         this.routes.GET[url] = callback;
     },
     post: function(url, callback){
         this.routes.POST[url] = callback;
+    },
+    put: function(url, callback) {
+        this.routes.PUT[url] = callback;
+    },
+    patch: function(url, callback) {
+        this.routes.PATCH[url] = callback;
+    },
+    delete: function(url, callback) {
+        this.routes.DELETE[url] = callback;
     },
     route: function(request, response){
         request.on("data", (d) => onRequestData(request, d));
