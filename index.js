@@ -71,7 +71,7 @@ function parseURLEncodedParameters(params) {
 function fileNotFound(request, response) {
     if(Router.fileNotFound) return fallbackOrNotFound(request, response, Router.fileNotFound);
 
-    response.writeHead(404, "Not found.");
+    response.writeHead(404, "Not found.", {"Content-Type": "text/plain"});
     response.write("File or action not found on this server.");
     response.end();
 }
