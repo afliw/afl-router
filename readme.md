@@ -35,7 +35,7 @@ aflRouter.fileNotFound = "404.html";
 // the same used by the callback in http server.
 aflRouter.get("/data", function(req, res){
     res.writeHead(200, "OK", {"Content-type": "text/plain"});
-    res.write("myData);
+    res.write("myData");
     res.end();
 });
 
