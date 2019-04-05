@@ -4,6 +4,8 @@ var fs = require('fs');
 var Router = {
     defaultFile: "index.html",
     baseDir: "/",
+    fileNotFound: undefined,
+    fallbackResource: undefined,
     routes: {
         GET: {},
         POST: {}
@@ -26,6 +28,10 @@ function onRequestData(request, data) {
 }
 
 function onRequestEnd(request, response) {
+    request.input = {
+        url: {},
+        body: {}
+    }
     parseBody(request);
     getUrlQueryParams(request);
     handleRequest(request, response);
@@ -50,11 +56,27 @@ function parseURLEncodedParameters(params) {
     return paramObj
 }
 
-function fileNotFound(response) {
-    // OPTION FOR CUSTOM FILE INSIDE ROUTER OPTIONS
-    response.writeHead(404, "File not found.");
-    response.write("The file was not found on this server.");
+function fileNotFound(request, response) {
+    if(Router.fileNotFound) return fallbackOrNotFound(request, response, Router.fileNotFound);
+
+    response.writeHead(404, "Not found.");
+    response.write("File or action not found on this server.");
     response.end();
+}
+
+function fallbackOrNotFound(request, response, action) {
+    if(typeof action == "string") {
+        if(!fs.existsSync(path.join(Router.baseDir, action)))
+            throw "Defined 'notFound' file doesn't exists inside 'baseDir' directory.";
+        returnStaticContent({
+            url: action,
+            fileExtension: getFileExtension(action)
+        }, response);
+    } else if(typeof action == "function"){
+        action(request, response);
+    } else {
+        throw "Router.notFound or Router.fallbackResource value is not a function or path to file.";
+    }
 }
 
 function getMimeType(ext) {
@@ -75,16 +97,20 @@ function getMimeType(ext) {
 }
 
 function handleRequest(request, response) {
-    //console.log(`Request ${request.method} > ${request.url}`);
-    //console.dir(request.input);
     request.fileExtension = getFileExtension(request.url);
     if (request.fileExtension) {
         returnStaticContent(request, response);
     } else if (Router.routes[request.method].hasOwnProperty(request.url)) {
         Router.routes[request.method][request.url](request, response);
     } else {
-        request.url += Router.defaultFile;
-        returnStaticContent(request, response);
+        if(fs.existsSync(path.join("./", request.url, Router.defaultFile))) {
+            request.url += Router.defaultFile;
+            returnStaticContent(request, response);
+        } else if(Router.fallbackResource) {
+            fallbackOrNotFound(request, response, Router.fallbackResource);
+        } else {
+            return fileNotFound(request, response);
+        }
     }
 }
 
@@ -156,7 +182,7 @@ function returnStaticContent(request, response) {
                 }            
             });
         } else {
-            fileNotFound(response);
+            fileNotFound(request, response);
         }
     })
 }
