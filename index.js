@@ -1,9 +1,11 @@
+/*jshint esversion: 9 */
+
 var path = require("path");
 var fs = require('fs');
 
 var Router = {
-    defaultFile: "index.html",
-    baseDir: "/",
+    defaultFilename: "index.html",
+    publicDirectory: undefined,
     fileNotFound: undefined,
     fallbackResource: undefined,
     routes: {
@@ -11,7 +13,11 @@ var Router = {
         POST: {},
         PUT: {},
         PATCH: {},
-        DELETE: {}
+        DELETE: {},
+        HEAD: {},
+        TRACE: {},
+        CONNECT: {},
+        OPTIONS: {}
     },
     get: function(url, callback){
         this.routes.GET[url] = callback;
@@ -31,7 +37,84 @@ var Router = {
     route: function(request, response){
         request.on("data", (d) => onRequestData(request, d));
         request.on("end", () => onRequestEnd(request, response));
+    },
+    setDefaultFilename(name) {
+        this.defaultFilename = name;
+    },
+    setFallback(resource) {
+        this.fallbackResource = resource;
+    },
+    setPublicDirectory(path) {
+        if(typeof path !== "string") throw new Error("Argument 'path' must be of type 'string'");
+        this.publicDirectory = path;
+    },
+    removeRoute(url, method) {
+        if(!method) {
+            if(this.routes[method.toUpperCase()].hasOwnProperty(url)) return false;
+            delete this.this.routes[method.toUpper()][url];
+        }
+        for(let met in this.routes){
+            if(this.routes[met].hasOwnProperty(url)) delete this.this.routes[m][url];
+        }
+        return true;
+    },
+    newRoute(url, actions) {
+        for(let method in actions) {
+            if(!this.routes.hasOwnProperty(method.toUpperCase())) {
+                console.warn(`Invalid method '${method}' in route definition.`);
+                continue;
+            }
+            this.routes[method.toUpperCase()][url] = actions[method];
+        }
+    },
+    listen: function(port) {
+        if(!port) throw "Must specify a port to listen to.";
+        const http = require("http");
+        return http.createServer(this.route).listen(port);
+    } 
+};
+
+function ResponseShortands(originalResponse) {
+
+    var response = originalResponse;
+
+    function genericAnswer(data, opts) {
+        response.writeHead(opts.statusCode || 200, opts.statusText, opts.headers);
+        response.end(data);
     }
+
+    function parseOptions(opts, contentType) {
+        opts = opts || {};
+        opts.headers = opts.headers || {};
+        opts.headers["Content-Type"] = opts.headers["Content-Type"] || contentType;
+        return opts;
+    }
+
+    return {
+        json(data, opts) {
+            opts = parseOptions(opts, "application/json");
+            data = typeof data == "string" ? data : JSON.stringify(data);
+            genericAnswer(data, opts);
+        },
+        text(data, opts) {
+            opts = parseOptions(opts, "text/plain");
+            data = typeof data == "string" ? data : JSON.stringify(data);
+            genericAnswer(data, opts);
+        },
+        html(data, opts) {
+            opts = parseOptions(opts, "text/html");
+            genericAnswer(data, opts);
+        },
+        file(path, opts) {
+            if(!fs.existsSync(path)) throw `Error: file '${path}' doesn't exists.`;
+            var mime = getMimeType(getFileExtension(path));
+            fs.readFile(path, (err, content) => {
+                if(err) throw err.message;
+                opts = parseOptions(opts, mime);
+                genericAnswer(content, opts);
+            });
+        }
+    };
 }
 
 function onRequestData(request, data) {
@@ -40,54 +123,76 @@ function onRequestData(request, data) {
 }
 
 function onRequestEnd(request, response) {
-    request.input = {
-        url: {},
-        body: {}
+    var decomposedUrl = parseUrl(request.url);
+    let parsedRequest = {
+        body: parseBody(request) || {},
+        query: decomposedUrl.queryParams,
+        url: decomposedUrl.url,
+        headers: request.headers,
+        method: request.method,
+        input(name) {
+            return this.body[name] || this.query[name] || null;
+        }
+    };
+    let descriptor = {
+        configurable: false, 
+        enumerable: false, 
+        writable: false
+    };
+    Object.defineProperty(parsedRequest, "__HTTP_Request__", {descriptor, value: request});
+    Object.defineProperty(parsedRequest, "__HTTP_Response__", {descriptor, value: response});
+    var rs = ResponseShortands(response);
+    Object.defineProperty(parsedRequest, "answer", {...descriptor, value: rs});
+    handleRequest(parsedRequest);
+}
+
+function parseUrl(url) {
+    var urlParts = url.split("?");
+    return {
+        url: urlParts[0],
+        queryParams: urlParts.length > 1 ? getQueryParams(urlParts[1]) : {}
+    };
+}
+
+function getQueryParams(queryString) {
+    var queryObj = {};
+    var queryStringParts = queryString.split("&");
+    for (var i = 0; i < queryStringParts.length; i++) {
+        var name = queryStringParts[i].split("=")[0];
+        var value = queryStringParts[i].split("=")[1];
+        if(/.*\[\]$/.test(name)) {
+            name = name.substr(0, name.length - 2);
+            queryObj[name] = Array.isArray(queryObj[name]) ? queryObj[name] : [];
+            queryObj[name].push(castValue(value));
+        } else {
+            queryObj[name] = castValue(value);
+        }
     }
-    parseBody(request);
-    getUrlQueryParams(request);
-    handleRequest(request, response);
+    return queryObj;
 }
 
-function getUrlQueryParams(request) {
-    if (request.url.indexOf("?") == -1) return;
-    var urlParts = request.url.split("?");
-    request.url = urlParts[0];
-    if(!request.input) request.input = {};
-    request.input.url = parseURLEncodedParameters(urlParts[1]);
-}
-
-function parseURLEncodedParameters(params) {
-    var paramObj = {};
-    var fullParams = params.split("&");
-    for (var i = 0; i < fullParams.length; i++) {
-        var name = fullParams[i].split("=")[0];
-        var value = fullParams[i].split("=")[1];
-        paramObj[name] = value;
+function castValue(val) {
+    if(isNaN(val) && typeof val == "string") {
+        val = val === "true" ? true : val === "false" ? false : val;
+        return val;
     }
-    return paramObj
+    return parseFloat(val) || val;
 }
 
-function fileNotFound(request, response) {
-    if(Router.fileNotFound) return fallbackOrNotFound(request, response, Router.fileNotFound);
 
-    response.writeHead(404, "Not found.", {"Content-Type": "text/plain"});
-    response.write("File or action not found on this server.");
-    response.end();
-}
-
-function fallbackOrNotFound(request, response, action) {
+function fallbackToResource(parsedRequest) {
+    let action = Router.fallbackResource;
+    if(!action) {
+        return parsedRequest.answer.text("File or action not found on this server.", {statusCode: 404, statusText: "Not found"});
+    }
     if(typeof action == "string") {
-        if(!fs.existsSync(path.join(Router.baseDir, action)))
-            throw "Defined 'notFound' file doesn't exists inside 'baseDir' directory.";
-        returnStaticContent({
-            url: action,
-            fileExtension: getFileExtension(action)
-        }, response);
+        if(!fs.existsSync(action))
+            throw `File ${action} could not be found.`;
+        parsedRequest.answer.file(action);
     } else if(typeof action == "function"){
-        action(request, response);
+        action(parsedRequest, parsedRequest.__HTTP_Response__);
     } else {
-        throw "Router.notFound or Router.fallbackResource value is not a function or path to file.";
+        throw `Fallback resource '${action}' is not a file or a callback.`;
     }
 }
 
@@ -103,25 +208,49 @@ function getMimeType(ext) {
         gif: "image/gif",
         json: "application/json",
         woff2: "font/woff2",
-        mp3: "audio/mpeg3"
-    }
+        mp3: "audio/mpeg3",
+        woff: "application/font-woff"
+    };
     return MimeTypes.hasOwnProperty(ext) ? MimeTypes[ext] : "text/html";
 }
 
-function handleRequest(request, response) {
-    request.fileExtension = getFileExtension(request.url);
-    if (request.fileExtension) {
-        returnStaticContent(request, response);
-    } else if (Router.routes[request.method].hasOwnProperty(request.url)) {
-        Router.routes[request.method][request.url](request, response);
+function handleRequest(parsedRequest) {
+    parsedRequest.fileExtension = getFileExtension(parsedRequest.url);
+    var routeCallback = matchRoute(Router.routes[parsedRequest.method], parsedRequest.url);
+    if (parsedRequest.fileExtension) {
+        returnStaticContent(parsedRequest);
+    } else if (routeCallback) {
+        parsedRequest.namedParameters = routeCallback.params;        
+        routeCallback.method(parsedRequest, parsedRequest.__HTTP_Response__);
     } else {
-        if(fs.existsSync(path.join("./", request.url, Router.defaultFile))) {
-            request.url += Router.defaultFile;
-            returnStaticContent(request, response);
-        } else if(Router.fallbackResource) {
-            fallbackOrNotFound(request, response, Router.fallbackResource);
+        if(Router.defaultFilename && fs.existsSync(path.join(Router.publicDirectory, parsedRequest.url, Router.defaultFilename))) {
+            parsedRequest.url += Router.defaultFilename;
+            returnStaticContent(parsedRequest);
         } else {
-            return fileNotFound(request, response);
+            fallbackToResource(parsedRequest);
+        }
+    }
+}
+
+function matchRoute(routes, url) {
+    if(!routes) return false;
+    url = url != "/" ? url.replace(/\/$/, "") : url;
+    if(routes.hasOwnProperty(url)) {
+        return {method: routes[url], params: {}};
+    } else {
+        var candidates = Object.keys(routes).filter(r => /{[^\/]+}/.test(r));
+        for(let candidate of candidates) {
+            let splitRoute = candidate.split("/");
+            let regexUrl = splitRoute.reduce( (a, c) => {
+                let test = /{(?<param>.*)}/.exec(c);
+                c = test ? `(?<${test.groups.param}>[^\\/]+)` : c;
+                return a + "\\/" + c;
+            });
+            regexUrl = new RegExp("^" + regexUrl + "$", "i");
+            if(regexUrl.test(url)){
+                var match = regexUrl.exec(url);
+                return {method: routes[candidate] , params: match.groups};
+            }
         }
     }
 }
@@ -152,9 +281,7 @@ function parseBody(request){
         default:
             break;
     }
-    if(!params) return;
-    if(!request.input) request.input = {};
-    request.input.body = params;
+    return params;
 }
 
 function parseFormData(data){
@@ -177,26 +304,11 @@ function parseFormData(data){
     return formData;
 }
 
-function returnStaticContent(request, response) {
-    var fullPath = path.join(".", Router.baseDir, request.url);
-    fs.exists(fullPath, (exists) => {
-        if (exists) {
-            fs.readFile(fullPath, (err, data) => {
-                if (err) {
-                    response.writeHead(500, "There was an error with your request.");
-                    response.end();
-                } else {
-                    response.writeHead(200, {
-                        "Content-Type": getMimeType(request.fileExtension)
-                    });
-                    response.write(data);
-                    response.end();
-                }            
-            });
-        } else {
-            fileNotFound(request, response);
-        }
-    })
+function returnStaticContent(parsedRequest) {
+    if(Router.publicDirectory === undefined) return fallbackToResource(parsedRequest);
+    var fullPath = path.join(Router.publicDirectory, parsedRequest.url);
+    if(!fs.existsSync(fullPath)) return fallbackToResource(parsedRequest);
+    parsedRequest.answer.file(fullPath);
 }
 
 module.exports = Router;
