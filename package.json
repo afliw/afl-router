@@ -16,5 +16,9 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/afliw/afl-router.git"
-  }
+  },
+  "typings": "index.d.ts",
+  "types": "index.d.ts",
+  "dependencies": {},
+  "devDependencies": {}
 }
