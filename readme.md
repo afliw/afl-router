@@ -15,14 +15,14 @@ also supports named parameters in URL, and a fallback resource if defined.
 
 * [Setting up the router](#setting-up-the-router)
   * [Intial router configuration](#initial-router-configuration)
-* [Defining the public directory (static files)](#defining-the-public-directory-(static-files))
+* [Defining the public directory (static files)](#defining-the-public-directory-static-files)
 * [Setting up routes](#setting-up-routes)
   * [Named parameters in URL](#named-parameters-in-url)
 * [Getting requests parameters](#getting-requests-parameters)
   * [Query string](#query-string)
   * [Body Content](#body-content)
 * [Answering requests](#answering-requests)
-  * [Using node's http.ServerResponse](#using-nodes-http.serverresponse)
+  * [Using node's http.ServerResponse](#using-nodes-httpserverresponse)
 
 ## Setting up the router
 
@@ -231,9 +231,9 @@ var server = router.listen(8080);
 
 ### Response shorthands (answer interface)
 
-Inside the `ParsedRequest` object, there a interface `answer` present to perform the request's response in a quick way.
+Inside the `ParsedRequest` object, there's a interface `answer` present to perform the request's response in a quick way.
 
-There are 4 shorthand functions present in `ParsedRequest.answer`: `json()`, `html()`, `text()` and `file()`. There's also a `generic()` function that does not set up automatically the response's header `Content-Type`.
+There are 4 shorthand functions in `ParsedRequest.answer`: `json()`, `html()`, `text()` and `file()`. There's also a `generic()` function that does not set up automatically the response's header `Content-Type`.
 
 This functions receive a first argument, `data` (or `filepath` in case of `file()`), and a second optional argument, `opts`. This second argument can contain `statusCode`, `statusText` and `headers` that will be writen in the response. If any of those is set, defaults will be overwriten.
 
