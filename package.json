@@ -1,6 +1,6 @@
 {
   "name": "afl-router",
-  "version": "1.0.7r",
+  "version": "2.0.1b",
   "description": "A minimalist HTTP router.",
   "main": "index.js",
   "scripts": {
@@ -9,7 +9,9 @@
   "keywords": [
     "server",
     "router",
-    "http"
+    "http",
+    "body",
+    "parse"
   ],
   "author": "afliw",
   "license": "ISC",
