@@ -127,7 +127,7 @@ router.get("/items", function(request) {
 });
 
 // POST to "http://localhost:8080/item/add" will land here
-router.get("/item/add", function(request) {
+router.post("/item/add", function(request) {
     // do stuff
 });
 
