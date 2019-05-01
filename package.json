@@ -20,5 +20,7 @@
   "typings": "index.d.ts",
   "types": "index.d.ts",
   "dependencies": {},
-  "devDependencies": {}
+  "devDependencies": {
+    "@types/node": "^11.13.8"
+  }
 }

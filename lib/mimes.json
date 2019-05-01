@@ -1312,7 +1312,8 @@
     "type": "chemical/x-pdb"
 }, {
     "ext": "zip",
-    "type": "application/zip"
+    "type": "application/zip",
+    "alt": ["application/x-zip-compressed"]
 }, {
     "ext": "zoo",
     "type": "application/octet-stream"

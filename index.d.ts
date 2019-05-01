@@ -1,5 +1,6 @@
 declare module "afl-router" {
-    import http = require("http");
+    import { ServerResponse, IncomingMessage, RequestListener, Server } from "http";
+    import { ReadStream } from "fs";
 
     class Router {
         
@@ -9,7 +10,7 @@ declare module "afl-router" {
          * @param  {RouterOptions} options? Initial router configuration options.
          * @returns Router
          */
-        constructor(options?: RouterOptions) : Router;
+        constructor(options?: RouterOptions);
         /**
          * Creates a new route over HTTP method GET.
          * @param  {string} url URL to match route to.
@@ -49,7 +50,7 @@ declare module "afl-router" {
          * Returns an HTTP Request listener function to feed as callback for http.createServer()
          * @returns http.RequestListener
          */
-        route() : http.RequestListener;
+        route() : RequestListener;
         /**
          * Sets the default filename to search inside public directory in case no route
          * is matched and no file is specified in URL.
@@ -88,7 +89,7 @@ declare module "afl-router" {
          * @param  {number} port Port to listen to.
          * @returns http Node's HTTP server.
          */
-        listen(port: number) : http.Server;
+        listen(port: number) : Server;
     }
 
     interface NewRouteActions {
@@ -99,18 +100,21 @@ declare module "afl-router" {
         publicDirectory?: string;
         fallback?: Function;
         defaultFilename?: string;
+        tempDirectory?: string;
+        sizeLimit?: number;
     }
 
-    type RouterCallback = (request: ParsedRequest, response: http.ServerResponse) => void;
+    type RouterCallback = (request: ParsedRequest, response: ServerResponse) => void;
 
     interface ParsedRequest {
-        readonly __HTTP_Request__: http.IncomingMessage;
-        readonly __HTTP_Response__: http.ServerResponse;
+        readonly __HTTP_Request__: IncomingMessage;
+        readonly __HTTP_Response__: ServerResponse;
         body: BodyObject;
         query: object;
         url: string;
         headers: object;
         method: string;
+        route: object;
         /**
          * Get a request parameter (body or query string) by name.
          * @param  {string} name Parameter name.
@@ -132,16 +136,12 @@ declare module "afl-router" {
          * @param  {string} encoding Encoding to write the file. Default: 'binary'.
          * @param  {function} callback Function to exectute when saving's done.
          */
-        save: (path: string, encoding: string, callback: (err: NodeJS.ErrnoException) => void) => void;
+        save: (path: string, callback: (err: NodeJS.ErrnoException) => void) => void;
         /**
          * @param  {string} path Full path and filename to save the file in.
          * @param  {string} encoding Encoding to write the file. Default: 'binary'.
          */
-        saveSync: (path: string, encoding: string) => void;
-        /**
-         * Destroy the file to free memory.
-         */
-        destroy: () => void;
+        saveSync: (path: string) => void;
     } 
 
     class ResponseShorthands {
@@ -171,16 +171,113 @@ declare module "afl-router" {
         text: (data: string, opts?: AnswerOptions) => void;
         /**
          * Respond to request with no Content-Type set.
-         * @param  {any} data Data to send.
+         * @param  {string} redirectUrl URL to set on Location header.
+         * @param  {AnswerOptions} opts Response options.
+         */
+        redirect: (redirectUrl: any, opts?: AnswerOptions) => void;
+        /**
+         * Respond to request with no Content-Type set.
+         * @param  {string | ReadStream} data Data to send.
          * @param  {AnswerOptions} opts Response options.
          */
         generic: (data: any, opts?: AnswerOptions) => void;
     }
 
     interface AnswerOptions {
-        headers?: http.OutgoingHttpHeaders;
+        headers?: HttpResponseHeaders;
         statusCode?: number;
         statusText?: string;
+        download?: boolean;
+        filename?: string;
+    }
+
+    interface HttpRequestHeaders {
+        "A-IM"?: string;
+        "Accept"?: string;
+        "Accept-Charset"?: string;
+        "Accept-Encoding"?: string;
+        "Accept-Language"?: string;
+        "Accept-Datetime"?: string;
+        "Access-Control-Request-Method"? : string;
+        "Access-Control-Request-Headers"?: string;
+        "Authorization"?: string;
+        "Cache-Control"?: string;
+        "Connection"?: string;
+        "Content-Length"?: string | number;
+        "Content-MD5"?: string;
+        "Content-Type"?: string;
+        "Cookie"?: string;
+        "Date"?: string;
+        "Expect"?: string;
+        "Forwarded"?: string;
+        "From"?: string;
+        "Host"?: string;
+        "HTTP2-Settings"?: string;
+        "If-Match"?: string;
+        "If-Modified-Since"?: string;
+        "If-None-Match"?: string;
+        "If-Range"?: string;
+        "If-Unmodified-Since"?: string;
+        "Max-Forwards"?: string;
+        "Origin"?: string;
+        "Pragma"?: string;
+        "Proxy-Authorization"?: string;
+        "Range"?: string;
+        "Referer"?: string;
+        "TE"?: string;
+        "User-Agent"?: string;
+        "Upgrade"?: string;
+        "Via"?: string;
+        "Warning"?: string
+    }
+
+    interface HttpResponseHeaders {
+        "Access-Control-Allow-Origin"?: string; 
+        "Access-Control-Allow-Credentials"?: string; 
+        "Access-Control-Expose-Headers"?: string; 
+        "Access-Control-Max-Age"?: string; 
+        "Access-Control-Allow-Methods"?: string; 
+        "Access-Control-Allow-Headers"?: string; 
+        "Accept-Patch"?: string; 
+        "Accept-Ranges"?: string; 
+        "Age"?: string; 
+        "Allow"?: string; 
+        "Alt-Svc"?: string; 
+        "Cache-Control"?: string; 
+        "Connection"?: string; 
+        "Content-Disposition"?: string; 
+        "Content-Encoding"?: string; 
+        "Content-Language"?: string; 
+        "Content-Length"?: string | number; 
+        "Content-Location"?: string; 
+        "Content-MD5"?: string; 
+        "Content-Range"?: string; 
+        "Content-Type"?: string; 
+        "Date"?: string; 
+        "Delta-Base"?: string; 
+        "ETag"?: string; 
+        "Expires"?: string; 
+        "IM"?: string; 
+        "Last-Modified"?: string; 
+        "Link"?: string; 
+        "Location"?: string; 
+        "P3P"?: string; 
+        "Pragma"?: string; 
+        "Proxy-Authenticate"?: string; 
+        "Public-Key-Pins"?: string; 
+        "Retry-After"?: string; 
+        "Server"?: string; 
+        "Set-Cookie"?: string; 
+        "Strict-Transport-Security"?: string; 
+        "Trailer"?: string; 
+        "Transfer-Encoding"?: string; 
+        "Tk"?: string; 
+        "Upgrade"?: string; 
+        "Vary"?: string; 
+        "Via"?: string; 
+        "Warning"?: string; 
+        "WWW-Authenticate"?: string; 
+        "X-Frame-Options"?: string
     }
 
     export = Router;

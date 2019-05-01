@@ -3,7 +3,7 @@
 Just a minimalist router to easily handle serving URLs in a HTTP server project.
 At this moment, this router can handle the serving of static files inside a defined
 public directory, HTTP request for any method,  parsing url query string, body, and 
-also supports named parameters in URL, and a fallback resource if defined.
+also supports route parameters in URL and a fallback resource in case no file or action is defined.
 
 # Installation
 
@@ -17,7 +17,7 @@ also supports named parameters in URL, and a fallback resource if defined.
   * [Intial router configuration](#initial-router-configuration)
 * [Defining the public directory (static files)](#defining-the-public-directory-static-files)
 * [Setting up routes](#setting-up-routes)
-  * [Named parameters in URL](#named-parameters-in-url)
+  * [Route parameters](#route-parameters)
 * [Getting requests parameters](#getting-requests-parameters)
   * [Query string](#query-string)
   * [Body Content](#body-content)
@@ -70,7 +70,9 @@ var server = router.listen(8080);
 
 ## Defining the public directory (static files)
 
-To serve static files (html files, scripts, images, stylesheets, etc), it's necessary to setup the public directory. It can be setup in the [router constructor](#initial-router-configuration) or with the method `setPublicDirectory()` after being created.
+To serve static files (html files, scripts, images, stylesheets, etc), it's necessary 
+to setup the public directory. It can be setup in the [router constructor](#initial-router-configuration) 
+or with the method `setPublicDirectory()` after being created.
 
 ```javascript
 const aflRouter = require("afl-router");
@@ -84,9 +86,14 @@ router.setPublicDirectory("/app/dist");
 
 var server = router.listen(8080);
 ```
-All static files requested to the server, will be fetch realitve to the public directory defined. So, if the requested url is _http://localhost:8080/scripts/mySript.js_, and the public directory is defined to *"/app/dist"*, the file that is going to be server should be in _%project_root%/app/dist/scripts/myScript.js_.
+All static files requested to the server, will be fetch realitve to 
+the public directory defined. So, if the requested 
+url is _http://localhost:8080/scripts/mySript.js_, and the public directory 
+is defined to *"/app/dist"*, the file that is going to be server should 
+be in _%project_root%/app/dist/scripts/myScript.js_.
 
-There is also `setDefaultFilename()` method, that, if setup, will serve that file in case none is specified (and no route is defined for that url).
+There is also `setDefaultFilename()` method, that, if setup, will serve 
+that file in case none is specified (and no route is defined for that url).
 
 ```javascript
 const aflRouter = require("afl-router");
@@ -98,7 +105,12 @@ router.setDefaultFilename("index.html");
 
 var server = router.listen(8080);
 ```
-If a **public directory** and a **default filename** are defined, when a URL is requested and no action is defined for that route, the router will look up for the default filename in the public directory. For example: _http://localhost:8080/article_ will serve, in case it exists, the file **index.html** (default filename) inside the directory **%project_root%/app/dist/article** (public directory + url path).
+If a **public directory** and a **default filename** are defined, 
+when a URL is requested and no action is defined for that route, 
+the router will look up for the default filename in the public directory. 
+For example: _http://localhost:8080/article_ will serve, in case it exists, 
+the file **index.html** (default filename) inside the 
+directory **%project_root%/app/dist/article** (public directory + url path).
 
 ## Setting up routes
 
@@ -124,7 +136,9 @@ var server = router.listen(8080);
 
 Every HTTP method can be used this way (get, post, put, head, etc.).
 
-An alternative way to setup a route is with an object, wich enables to define several method action for a single route in one invokation:
+An alternative way to setup a route is with an object, 
+wich enables to define several method action for a 
+single route in one invokation:
 
 ```javascript
 const aflRouter = require("afl-router");
@@ -148,9 +162,10 @@ router.newRoute("/user", userActions);
 var server = router.listen(8080);
 ```
 
-### Named parameters in URL
+### Route parameters
 
-Named parameters can be setup in an URL, and retrieved within the `ParsedRequest` object passed in the callback.
+Named parameters can be setup in an URL, and retrieved 
+within the `ParsedRequest` object passed in the callback.
 
 ```javascript
 const aflRouter = require("afl-router");
@@ -159,19 +174,19 @@ var router = new aflRouter();
 
 // ie: http://localhost:8080/posts/2019/04
 router.get("/posts/{year}/{month}", function(request) {
-    console.log(request.namedParameters.year); // ie: 2019
-    console.log(request.namedParameters.month); // ie: 04
+    console.log(request.route.year); // ie: 2019
+    console.log(request.route.month); // ie: 04
 });
 
 // ie: http://localhost:8080/user/do_update/45
 router.post("/user/do_{action}/{id}", function(request) {
-    console.log(request.namedParameter.action); // ie: 'update'
-    console.log(request.namedParameter.id); // ie: 45
+    console.log(request.route.action); // ie: 'update'
+    console.log(request.route.id); // ie: 45
 });
 
 // ie: http://localhost:8080/main.js
 router.head("/{filename}.js", function(request) {
-    console.log(request.namedParameters.filename); // ie: 'main'
+    console.log(request.route.filename); // ie: 'main'
 }); 
 
 var server = router.listen(8080);
@@ -181,7 +196,9 @@ var server = router.listen(8080);
 
 ### Query string
 
-To get query string parameters passed within the url, the object `query` inside the `request` object received as parameter in the route callback can be used:
+To get query string parameters passed within the url, the 
+object `query` inside the `request` object received as 
+parameter in the route callback can be used:
 
 ```javascript
 const aflRouter = require("afl-router");
@@ -196,11 +213,13 @@ router.get("/posts", function(request) {
 
 var server = router.listen(8080);
 ```
-Query string parameters are parsed by the router and store inside the `query` object, and can be accessed by their name as properties.
+Query string parameters are parsed by the router and store inside 
+the `query` object, and can be accessed by their name as properties.
 
 ### Body content
 
-Content of request's body will be parsed according to the content-type declared, and is available through `ParsedRequest.body` object:
+Content of request's body will be parsed according to the 
+content-type declared, and is available through `ParsedRequest.body` object:
 
 ```javascript
 const fs = require("fs");
@@ -217,25 +236,35 @@ router.post("/comments/new", function(request) {
 // Files uploaded with multipart/form-data are available in body object as well.
 // In this example, the name of the file uploaded is 'photo':
 router.post("/upload", function(request) {
-    let filename = request.body.photo.filename;
-    let content = request.body.photo.file
-    fs.writeFile(filename, content, "binary", function(err) {
-        console.log(err || "File saved to disk!");
-    });
+    let uploadedPhoto = request.body.photo;
+    // SaveSync moves the temp file to the new location with the given name
+    uploadedPhoto.saveSync(uploadedPhoto.filename);
+    request.answer.json({result: "Photo saved!"});
 });
 
 var server = router.listen(8080);
 ```
+### IMPORTANT!
+Uploaded files that are not moved with `save()` or `saveSync()` 
+should be deleted manually using it's `tmpFile` property: 
+`fs.unlinkSync(request.body.exampleFile.tmpFile)`.
 
 ## Answering requests
 
 ### Response shorthands (answer interface)
 
-Inside the `ParsedRequest` object, there's a interface `answer` present to perform the request's response in a quick way.
+Inside the `ParsedRequest` object, there's a interface `answer` 
+present to perform the request's response in a quick way.
 
-There are 4 shorthand functions in `ParsedRequest.answer`: `json()`, `html()`, `text()` and `file()`. There's also a `generic()` function that does not set up automatically the response's header `Content-Type`.
+There are 5 shorthand functions in `ParsedRequest.answer`: `json()`, 
+`html()`, `text()`, `redirect()` and `file()`. There's also a `generic()` 
+function that does not set up automatically the response's header `Content-Type`.
 
-This functions receive a first argument, `data` (or `filepath` in case of `file()`), and a second optional argument, `opts`. This second argument can contain `statusCode`, `statusText` and `headers` that will be writen in the response. If any of those is set, defaults will be overwriten.
+This functions receive a first argument, `data` (or `filepath` 
+in case of `file()`, `url` in case of `redirect()`), and a second 
+optional argument, `opts`. This second argument can contain `statusCode`, 
+`statusText` and an array of `headers` that will be writen in the response. 
+If any of those is set, defaults will be overwriten.
 
 ```javascript
 const path = require("path");
@@ -249,12 +278,13 @@ router.get("/users", function(request) {
         {name: "Jack", last_seen: "2019-03-02"},
         {name: "Peter", last_seen: "2018-11-27"}
     ];
-    // json() automatically stringify the object and set the response's Content-Type
+    // json() automatically stringify the object and set the 
+    // response's Content-Type
     request.answer.json(users);
 });
 
 router.get("/user/profile_photo/{id}", function(request) {
-    let userId = request.namedParameters.id;
+    let userId = request.route.id;
     let filepath = path.join("images", "users_profile", userId + ".jpg");
     if(fs.existsSync(filepath)) {
         // file() receives a path to file as parameter, 
@@ -268,14 +298,38 @@ router.get("/user/profile_photo/{id}", function(request) {
     }
 });
 
+router.get("/redirect", request => request.answer.redirect("/users"));
+
 var server = router.listen(8080);
 ```
 
-As seen in the previous example, it is possible to change the defaults `statusCode`, `statusText` and `headers` on the response sent to the client by this shorthand functions.
+As seen in the previous example, it is possible to change the defaults 
+`statusCode`, `statusText` and `headers` on the response sent to the 
+client by this shorthand functions. Additionally, extra options `download` 
+and `filename` can be passed to force client download the response file.
+
+```javascript
+const aflRouter = require("afl-router");
+
+var router = new aflRouter();
+
+router.get("/somefile", function(request) {
+    // If `filename` option is not passed, the original filename will be used.
+    request.answer.file("/path/to/file.ext", {
+        download: true, 
+        filename: "myFile.ext"
+    });
+});
+
+var server = router.listen(8080);
+```
 
 ### Using Node's `http.ServerResponse`
 
-On every `RouterCallback`, besides the `ParsedRequest` object that is passed as first parameter, a second argument is passed, containing Node's `http.ServerResponse`. This response can be used to answer the request in the traditional way:
+On every `RouterCallback`, besides the `ParsedRequest` object that 
+is passed as first argument to the callback, a second argument is given, 
+containing Node's raw `http.ServerResponse`. This response can be used to 
+answer the request in the traditional way:
 
 ```javascript
 const aflRouter = require("afl-router");
