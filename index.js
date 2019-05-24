@@ -107,7 +107,7 @@ function handleRequest(parsedRequest, router) {
         let defaultFileExists = fs.existsSync(path.join(router.publicDirectory, parsedRequest.url, router.defaultFilename));
         if (router.defaultFilename && router.publicDirectory && defaultFileExists) {
             parsedRequest.url += router.defaultFilename;
-            returnStaticContent(parsedRequest);
+            returnStaticContent(parsedRequest, router);
         }
         else {
             fallbackToResource(parsedRequest, router);
