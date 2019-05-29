@@ -116,7 +116,7 @@ function handleRequest(parsedRequest, router) {
 }
 
 function fallbackToResource(parsedRequest, router) {
-    let action = router.fallbackResource;
+    let action = router.fallback;
     if (!action) {
         return parsedRequest.answer.text("File or action not found on this server.", { statusCode: 404, statusText: "Not found" });
     }
