@@ -52,6 +52,25 @@ declare module "afl-router" {
          */
         route() : RequestListener;
         /**
+         * Add a header with its value to default response headers
+         * @param  {String} headerName Header name to be set
+         * @param  {String|Number} value Header value
+         * @returns void
+         */
+        addDefaultHeader(headerName: String, value: String | Number) : void;
+        /**
+         * Sets the default response headers object
+         * @param  {HttpResponseHeaders} headers Object containing the headers to be set
+         * @returns void
+         */
+        setDefaultHeaders(headers: HttpResponseHeaders) :void;
+        /**
+         * Removes a header from the default response headers object
+         * @param  {String} headerName Heade name to be removed
+         * @returns void
+         */
+        removeDefaultHeader(headerName: String) : void;
+        /**
          * Sets the default filename to search inside public directory in case no route
          * is matched and no file is specified in URL.
          * @param  {string} name Name for default file to look up.
@@ -102,6 +121,7 @@ declare module "afl-router" {
         defaultFilename?: string;
         tempDirectory?: string;
         sizeLimit?: number;
+        defaultHeaders?: HttpResponseHeaders;
     }
 
     type RouterCallback = (request: ParsedRequest, response: ServerResponse) => void;

@@ -22,6 +22,7 @@ class Router {
             CONNECT: {},
             OPTIONS: {}
         };
+        this.defaultHeaders = options.defaultHeaders || {};
         this.publicDirectory = options.publicDirectory;
         this.fallback = options.fallback;
         this.defaultFilename = options.defaultFilename;
@@ -53,6 +54,15 @@ class Router {
                 onRequestEnd(request, response, parsedContent, this);
             });
         };
+    }
+    addDefaultHeader(headerName, value) {
+        this.defaultHeaders[headerName] = value;
+    }
+    setDefaultHeaders(headers) {
+        this.defaultHeaders = headers;
+    }
+    removeDefaultHeader(headerName) {
+        delete this.defaultHeaders[headerName];
     }
     setDefaultFilename(name) {
         this.defaultFilename = name;
@@ -143,7 +153,7 @@ function returnStaticContent(parsedRequest, router) {
 }
 
 function onRequestEnd(request, response, parsedContent, router) {
-    var parsedRequest = new ParsedRequest(request, response, parsedContent);
+    var parsedRequest = new ParsedRequest(request, response, parsedContent, router.defaultHeaders);
     handleRequest(parsedRequest, router);
 }
 
