@@ -529,6 +529,9 @@
     "ext": "m3u",
     "type": "audio/x-mpequrl"
 }, {
+    "ext": "m4a",
+    "type": "audio/mp4a-latm"
+}, {
     "ext": "man",
     "type": "application/x-troff-man"
 }, {
