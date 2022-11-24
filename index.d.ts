@@ -122,6 +122,7 @@ declare module "afl-router" {
         tempDirectory?: string;
         sizeLimit?: number;
         defaultHeaders?: HttpResponseHeaders;
+        basePath?: string
     }
 
     type RouterCallback = (request: ParsedRequest, response: ServerResponse) => void;

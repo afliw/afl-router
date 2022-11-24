@@ -28,6 +28,7 @@ class Router {
         this.defaultFilename = options.defaultFilename;
         this.tempDirectory = options.tempDirectory || os.tmpdir() || "tmp";
         this.sizeLimit = options.sizeLimit;
+        this.basePath = options.basePath;
         if(!fs.existsSync(path.resolve(this.tempDirectory))) {
             fs.mkdirSync(path.resolve(this.tempDirectory));
         }
@@ -104,6 +105,7 @@ class Router {
 }
 
 function handleRequest(parsedRequest, router) {
+    parsedRequest.url = router.basePath ? parsedRequest.url.replace(new RegExp(`^${router.basePath}`), "") : parsedRequest.url;
     parsedRequest.fileExtension = getFileExtension(parsedRequest.url);
     var routeCallback = matchRoute(router.routes[parsedRequest.method], parsedRequest.url);
     if (routeCallback) {
