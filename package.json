@@ -1,6 +1,6 @@
 {
   "name": "afl-router",
-  "version": "2.2.1b",
+  "version": "2.2.2",
   "description": "A minimalist HTTP router.",
   "main": "index.js",
   "scripts": {
